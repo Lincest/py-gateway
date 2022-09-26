@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, make_response
 from flask_cors import *
 import consul
+import socket
 
 PORT = 5051
 CONSUL_PORT = 8500
@@ -18,9 +19,10 @@ def get_test():
 
 def register_service():
     cursor = consul.Consul(host=HOST, port=CONSUL_PORT, scheme='http')
+    service_address = socket.gethostbyname(socket.gethostname())  # consul在docker中, 不可以使用localhost
     cursor.agent.service.register(
-        name='gateway-test-server', address=HOST, port=PORT,
-        check=consul.Check().tcp(host=HOST, port=PORT,
+        name='gateway-test-server', address=service_address, port=PORT,
+        check=consul.Check().tcp(host=service_address, port=PORT,
                                  interval='5s',
                                  timeout='30s', deregister='30s')
     )
@@ -29,4 +31,4 @@ def register_service():
 if __name__ == '__main__':
     # 注册服务到consul
     register_service()
-    app.run(port=PORT)
+    app.run(host='0.0.0.0', port=PORT)
