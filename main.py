@@ -19,23 +19,32 @@ def gateway_proxy(service_name, api):
     if service is None:
         return jsonify({"code": -1, "message": "service [{}] is not found".format(service_name)})
     service = '%s:%s' % (service.get('Address'), service.get('Port'))
+    url = f"http://{service}/{api}"
+    print('url = ', url)
     try:
-        result = None
-        url = f"http://{service}/{api}"
-        print('url = ', url)
         print('headers = ', request.headers)
         headers = {}
         for k, v in request.headers:
             headers[k] = v
         print('args = ', request.args)
         print('json = ', request.get_json(silent=True))
+        response = None
         if request.method == 'GET':
             response = requests.get(url, params=request.args.to_dict(), headers=headers)
-            content = response.content
-            resp_headers = response.headers
-            result = make_response(content)
-            for k, v in resp_headers:
-                result.headers[k] = v
+        elif request.method == 'POST':
+            response = requests.post(url, params=request.args.to_dict(), headers=headers,
+                                     json=request.get_json(silent=True))
+        elif request.method == 'PUT':
+            response = requests.put(url, params=request.args.to_dict(), headers=headers,
+                                    json=request.get_json(silent=True))
+        elif request.method == 'DELETE':
+            response = requests.delete(url, params=request.args.to_dict(), headers=headers,
+                                       json=request.get_json(silent=True))
+        content = response.content
+        resp_headers = response.headers
+        result = make_response(content)
+        for k, v in resp_headers:
+            result.headers[k] = v
         return result, 200
     except Exception as e:
         print('Exception: ', e)
