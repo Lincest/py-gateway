@@ -23,9 +23,7 @@ def gateway_proxy(service_name, api):
     print('url = ', url)
     try:
         print('headers = ', request.headers)
-        headers = {}
-        for k, v in request.headers:
-            headers[k] = v
+        headers = {k: v for k, v in request.headers.items()}
         print('args = ', request.args)
         print('json = ', request.get_json(silent=True))
         response = None
@@ -40,12 +38,11 @@ def gateway_proxy(service_name, api):
         elif request.method == 'DELETE':
             response = requests.delete(url, params=request.args.to_dict(), headers=headers,
                                        json=request.get_json(silent=True))
-        content = response.content
-        resp_headers = response.headers
-        result = make_response(content)
-        for k, v in resp_headers:
-            result.headers[k] = v
-        return result, 200
+        else:
+            return jsonify({"code": -1, "message": "不支持的方法: " + request.method})
+        result = make_response(response.content)
+        result.headers = {k: v for k, v in response.headers.items()}
+        return result
     except Exception as e:
         print('Exception: ', e)
         return jsonify({"code": -1, "message": "api: {} failed".format(url)})
