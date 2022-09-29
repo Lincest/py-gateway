@@ -49,13 +49,23 @@ def create_app():
 
 def register_service():
     cursor = consul.Consul(host=HOST, port=CONSUL_PORT, scheme='http')
-    service_address = socket.gethostbyname(socket.gethostname())  # consul在docker中, 不可以使用localhost
+    service_address = get_host_ip()  # a better way to get ip
     cursor.agent.service.register(
         name='gateway-test-server', address=service_address, port=PORT,
         check=consul.Check().tcp(host=service_address, port=PORT,
                                  interval='5s',
                                  timeout='30s', deregister='30s')
     )
+
+
+def get_host_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
 
 
 if __name__ == '__main__':
